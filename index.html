@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Zama Daily Quiz — Day 17</title>
+  <style>
+    :root{
+      --bg-a:#071026;
+      --card: rgba(255,255,255,0.05);
+      --accent1:#6EE7B7;
+      --accent2:#34D399;
+      --muted:#9fb0bf;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family: Inter, Poppins, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(135deg,#071026 0%, #0b3044 100%);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+    .app{
+      width:100%;
+      max-width:820px;
+      background:var(--card);
+      border-radius:16px;
+      padding:26px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+      overflow:hidden;
+    }
+
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+    header h1{font-size:20px;margin:0}
+    header p{margin:0;color:var(--muted);font-size:13px}
+
+    .section { display:none }
+    .show { display:block }
+
+    .intro { text-align:center;padding:10px 8px }
+    .intro h2{margin:8px 0 10px;font-size:22px}
+    .intro p{margin:0 0 16px;color:var(--muted)}
+
+    .btn {
+      display:inline-block;
+      background:linear-gradient(90deg,var(--accent1),var(--accent2));
+      border: none;
+      color: white;
+      padding: 10px 16px;
+      border-radius:10px;
+      font-weight:600;
+      cursor:pointer;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+    }
+    .btn.ghost{ background:transparent; border:1px solid rgba(255,255,255,0.06) }
+
+    #progressBar{ height:10px; background: rgba(255,255,255,0.04); border-radius:6px; overflow:hidden; margin-bottom:14px }
+    #progress{ height:100%; width:0%; background:linear-gradient(90deg,var(--accent1),var(--accent2)); transition:width 350ms linear }
+
+    .q-area { padding:8px 4px 2px; }
+    .q-head { display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px }
+    .q-number { font-weight:600;color:var(--muted);font-size:13px }
+    .q-text { font-size:18px;margin:6px 0 14px;line-height:1.35 }
+
+    .options { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .opt {
+      background: rgba(255,255,255,0.03);
+      padding:12px;
+      border-radius:10px;
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,0.02);
+      text-align:left;
+      transition: transform .12s, background .12s, box-shadow .12s;
+      font-weight:600;
+    }
+    .opt:hover{ transform: translateY(-4px) }
+    .opt.disabled{ pointer-events:none; opacity:0.9 }
+
+    .opt.correct{ background: linear-gradient(90deg,#34D399,#10B981); color:#021611 }
+    .opt.wrong{ background: linear-gradient(90deg,#FB7185,#F97316); color:#fff }
+
+    .timer { margin-top:12px; font-weight:700; color: #34D399 }
+    .muted { color:var(--muted); font-size:13px }
+
+    .result .score { font-size:20px; margin:10px 0 14px }
+
+    .footer { margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center }
+
+    @media (max-width:700px){
+      .options{ grid-template-columns:1fr }
+      .q-text{ font-size:16px }
+      header{flex-direction:column;align-items:flex-start}
+    }
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-live="polite">
+    <header>
+      <div>
+        <h1>Zama Daily Quiz • Day 17</h1>
+        <p class="small">FHE • TFHE-rs • Confidential Blockchain</p>
+      </div>
+      <div class="small muted">10 questions • 10s each</div>
+    </header>
+
+    <!-- Start -->
+    <section id="start" class="section show">
+      <div class="intro">
+        <h2>Ready for today's Day 17 quiz?</h2>
+        <p>Quick 10-question challenge about FHE, Zama tools and privacy tech — 10 seconds per question.</p>
+        <button id="startBtn" class="btn">Start Quiz — Let's go!</button>
+      </div>
+      <div style="text-align:center" class="muted small">Tip: Share your final score on Twitter to challenge friends.</div>
+    </section>
+
+    <!-- Quiz -->
+    <section id="quiz" class="section">
+      <div id="progressBar"><div id="progress"></div></div>
+
+      <div class="q-area">
+        <div class="q-head">
+          <div class="q-number" id="qNumber">Question 1 of 10</div>
+          <div class="muted" id="scoreBadge">Score: 0</div>
+        </div>
+
+        <div class="q-text" id="qText">Question text</div>
+
+        <div class="options" id="options"></div>
+
+        <div class="timer" id="timer">⏱️ Time left: <span id="timeLeft">10</span>s</div>
+        <div style="margin-top:10px" class="muted">Answers are randomized — choose the best one.</div>
+      </div>
+    </section>
+
+    <!-- Result -->
+    <section id="result" class="section" style="text-align:center;display:none">
+      <h2>🎉 Quiz Complete</h2>
+      <div class="score" id="finalScore">You scored 0 / 10</div>
+      <div class="footer">
+        <button id="retryBtn" class="btn">Play Again</button>
+        <a id="tweetBtn" target="_blank"><button class="btn btn-ghost ghost">Share on Twitter</button></a>
+      </div>
+      <div style="margin-top:10px" class="muted small">Thanks for learning about privacy-first tech ✨</div>
+    </section>
+  </div>
+
+  <!-- Sounds -->
+  <audio id="soundCorrect" src="https://cdn.pixabay.com/audio/2022/03/15/audio_03e0c4b4f3.mp3"></audio>
+  <audio id="soundWrong" src="https://cdn.pixabay.com/audio/2022/03/15/audio_f57b08f74a.mp3"></audio>
+  <audio id="soundWarn"  src="https://cdn.pixabay.com/audio/2022/03/15/audio_8a4b3d14cd.mp3"></audio>
+
+  <script>
+    // Day 17 questions (as provided)
+    const raw = [
+      { q: "What does FHE allow you to do?", opts:["Encrypt faster","Compute on encrypted data","Store more data"], correct: "Compute on encrypted data" },
+      { q: "Which Zama tool lets developers run smart contracts privately?", opts:["FHEVM","TensorFlow","Hardhat"], correct: "FHEVM" },
+      { q: "What’s the key advantage of confidential blockchains?", opts:["Anonymous memes","Selective data disclosure","Faster gas fees"], correct: "Selective data disclosure" },
+      { q: "Zama’s Concrete ML focuses on…", opts:["Privacy-preserving machine learning","3D graphics","Gaming"], correct: "Privacy-preserving machine learning" },
+      { q: "TFHE-rs is written mainly in which language?", opts:["Rust","Python","C++"], correct: "Rust" },
+      { q: "What is “bootstrapping” in FHE?", opts:["Refreshing ciphertexts","Creating wallets","Launching nodes"], correct: "Refreshing ciphertexts" },
+      { q: "Who are the creators behind Zama?", opts:["Pascal Paillier & Rand Hindi","Vitalik Buterin","Satoshi Nakamoto"], correct: "Pascal Paillier & Rand Hindi" },
+      { q: "Why is FHE important for AI models?", opts:["It speeds up GPU","Keeps input/output encrypted","Compresses data"], correct: "Keeps input/output encrypted" },
+      { q: "What’s the Zama Creator Program for?", opts:["Rewarding content creators","Mining rewards","NFT trading"], correct: "Rewarding content creators" },
+      { q: "“Threshold FHE” means…", opts:["Multi-party decryption control","GPU acceleration","Threshold block sizes"], correct: "Multi-party decryption control" }
+    ];
+
+    // State
+    let questions = [];
+    let idx = 0;
+    let score = 0;
+    let timer = null;
+    const TIME = 10;
+
+    // DOM
+    const startEl = document.getElementById('start');
+    const quizEl = document.getElementById('quiz');
+    const resultEl = document.getElementById('result');
+    const qNumberEl = document.getElementById('qNumber');
+    const qTextEl = document.getElementById('qText');
+    const optionsEl = document.getElementById('options');
+    const timeLeftEl = document.getElementById('timeLeft');
+    const progressEl = document.getElementById('progress');
+    const scoreBadge = document.getElementById('scoreBadge');
+    const finalScore = document.getElementById('finalScore');
+    const tweetBtn = document.getElementById('tweetBtn');
+    const soundCorrect = document.getElementById('soundCorrect');
+    const soundWrong = document.getElementById('soundWrong');
+    const soundWarn = document.getElementById('soundWarn');
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      prepare();
+      startQuiz();
+    });
+    document.getElementById('retryBtn').addEventListener('click', () => location.reload());
+
+    function prepare(){
+      // clone and shuffle options per question
+      questions = raw.map(item => {
+        const opts = item.opts.slice();
+        for (let i = opts.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [opts[i], opts[j]] = [opts[j], opts[i]];
+        }
+        return {
+          q: item.q,
+          opts,
+          correctIndex: opts.findIndex(x => x === item.correct)
+        };
+      });
+    }
+
+    function startQuiz(){
+      startEl.classList.remove('show'); startEl.style.display='none';
+      quizEl.classList.add('show'); quizEl.style.display='block';
+      idx = 0; score = 0;
+      render();
+    }
+
+    function render(){
+      clearTimer();
+      const cur = questions[idx];
+      qNumberEl.textContent = `Question ${idx+1} of ${questions.length}`;
+      qTextEl.textContent = cur.q;
+      optionsEl.innerHTML = '';
+      scoreBadge.textContent = `Score: ${score}`;
+      // create option elements (buttons)
+      cur.opts.forEach((opt, i) => {
+        const d = document.createElement('div');
+        d.className = 'opt';
+        d.tabIndex = 0;
+        d.innerText = opt;
+        d.onclick = () => choose(i);
+        d.onkeydown = (e) => { if (e.key === 'Enter') choose(i) };
+        optionsEl.appendChild(d);
+      });
+      progressEl.style.width = `${(idx / questions.length) * 100}%`;
+      startTimer(TIME);
+    }
+
+    function startTimer(seconds){
+      let t = seconds;
+      timeLeftEl.innerText = t;
+      timer = setInterval(() => {
+        t--;
+        timeLeftEl.innerText = t;
+        if (t === 3) { soundWarn.play().catch(()=>{}); }
+        if (t <= 0) {
+          clearInterval(timer);
+          // show correct and move on
+          reveal(null);
+          setTimeout(()=> next(), 700);
+        }
+      }, 1000);
+    }
+
+    function clearTimer(){
+      if (timer) { clearInterval(timer); timer = null; }
+    }
+
+    function choose(i){
+      clearTimer();
+      reveal(i);
+      const cur = questions[idx];
+      if (i === cur.correctIndex) { score++; soundCorrect.play().catch(()=>{}); }
+      else { soundWrong.play().catch(()=>{}); }
+      setTimeout(()=> next(), 700);
+    }
+
+    function reveal(chosen){
+      const cur = questions[idx];
+      const nodes = Array.from(document.querySelectorAll('.opt'));
+      nodes.forEach((n, i) => {
+        n.classList.add('disabled');
+        if (i === cur.correctIndex) { n.classList.add('correct'); }
+        else if (i === chosen && chosen !== cur.correctIndex) { n.classList.add('wrong'); }
+      });
+    }
+
+    function next(){
+      idx++;
+      if (idx < questions.length) render();
+      else finish();
+    }
+
+    function finish(){
+      clearTimer();
+      quizEl.classList.remove('show'); quizEl.style.display='none';
+      resultEl.classList.add('show'); resultEl.style.display='block';
+      finalScore.textContent = `You scored ${score} / ${questions.length}`;
+      const tweetText = encodeURIComponent(`I scored ${score}/${questions.length} on the Zama Daily Quiz (Day 17)! Try it here:`);
+      const url = encodeURIComponent(location.href);
+      tweetBtn.href = `https://twitter.com/intent/tweet?text=${tweetText}&url=${url}&hashtags=ZamaFHE,FHE,ConfidentialAI`;
+    }
+
+    // init
+    (function init(){
+      startEl.style.display = 'block';
+      quizEl.style.display = 'none';
+      resultEl.style.display = 'none';
+    })();
+  </script>
+</body>
+</html>
